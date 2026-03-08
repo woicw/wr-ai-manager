@@ -29,6 +29,15 @@ const defaultSettings: Omit<
   githubRelativePath: 'awesome-claude',
 };
 
+function resolvePersistedString(
+  persistedValue: unknown,
+  fallbackValue: string,
+) {
+  return typeof persistedValue === 'string' && persistedValue.trim().length > 0
+    ? persistedValue
+    : fallbackValue;
+}
+
 export const useSettingsStore = create<SettingsStore>()(
   persist(
     (set) => ({
@@ -41,10 +50,34 @@ export const useSettingsStore = create<SettingsStore>()(
     }),
     {
       name: 'settings-storage',
-      merge: (persistedState, currentState) => ({
-        ...currentState,
-        ...(persistedState as Partial<SettingsStore>),
-      }),
+      merge: (persistedState, currentState) => {
+        const persisted = (persistedState as Partial<SettingsStore>) ?? {};
+
+        return {
+          ...currentState,
+          ...persisted,
+          locale:
+            persisted.locale === 'zh-CN' || persisted.locale === 'en-US'
+              ? persisted.locale
+              : currentState.locale,
+          defaultEditor:
+            typeof persisted.defaultEditor === 'string'
+              ? persisted.defaultEditor
+              : currentState.defaultEditor,
+          githubRepoUrl: resolvePersistedString(
+            persisted.githubRepoUrl,
+            currentState.githubRepoUrl,
+          ),
+          githubUseRelativePath:
+            typeof persisted.githubUseRelativePath === 'boolean'
+              ? persisted.githubUseRelativePath
+              : currentState.githubUseRelativePath,
+          githubRelativePath: resolvePersistedString(
+            persisted.githubRelativePath,
+            currentState.githubRelativePath,
+          ),
+        };
+      },
     },
   ),
 );
