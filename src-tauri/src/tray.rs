@@ -111,38 +111,84 @@ fn handle_menu_event(app: &AppHandle, event: tauri::menu::MenuEvent) {
 }
 
 fn handle_config_group_switch(app: &AppHandle, group_id: &str) {
-    let state = app.state::<AppState>();
+    let app_handle = app.app_handle().clone();
+    let group_id = group_id.to_string();
 
-    // Update active group in global config
-    let manager = match state.config_manager.lock() {
-        Ok(m) => m,
-        Err(e) => {
-            eprintln!("Failed to lock config manager: {}", e);
-            return;
+    // Spawn async task to apply config group
+    tauri::async_runtime::spawn(async move {
+        let state = app_handle.state::<AppState>();
+
+        // Get all enabled AI tools
+        let enabled_tools = {
+            let manager = match state.config_manager.lock() {
+                Ok(m) => m,
+                Err(e) => {
+                    eprintln!("Failed to lock config manager: {}", e);
+                    return;
+                }
+            };
+
+            let global_config = match manager.load_global_config() {
+                Ok(c) => c,
+                Err(e) => {
+                    eprintln!("Failed to load global config: {}", e);
+                    return;
+                }
+            };
+
+            global_config
+                .ai_tools
+                .iter()
+                .filter(|(_, tool)| tool.enabled)
+                .map(|(id, _)| id.clone())
+                .collect::<Vec<_>>()
+        };
+
+        // Apply config group to each enabled tool
+        for tool_id in enabled_tools {
+            if let Err(e) = crate::commands::apply::apply_config_group(
+                group_id.clone(),
+                tool_id.clone(),
+                false,
+                state.clone(),
+            )
+            .await
+            {
+                eprintln!("Failed to apply config group to {}: {}", tool_id, e);
+            }
         }
-    };
 
-    let mut global_config = match manager.load_global_config() {
-        Ok(c) => c,
-        Err(e) => {
-            eprintln!("Failed to load global config: {}", e);
-            return;
+        // Update active group in global config
+        {
+            let manager = match state.config_manager.lock() {
+                Ok(m) => m,
+                Err(e) => {
+                    eprintln!("Failed to lock config manager: {}", e);
+                    return;
+                }
+            };
+
+            let mut global_config = match manager.load_global_config() {
+                Ok(c) => c,
+                Err(e) => {
+                    eprintln!("Failed to load global config: {}", e);
+                    return;
+                }
+            };
+
+            global_config.active_group = group_id.clone();
+
+            if let Err(e) = manager.save_global_config(&global_config) {
+                eprintln!("Failed to save global config: {}", e);
+                return;
+            }
         }
-    };
 
-    global_config.active_group = group_id.to_string();
-
-    if let Err(e) = manager.save_global_config(&global_config) {
-        eprintln!("Failed to save global config: {}", e);
-        return;
-    }
-
-    drop(manager);
-
-    // Update tray menu to reflect the change
-    if let Err(e) = update_tray_menu(app, &state) {
-        eprintln!("Failed to update tray menu: {}", e);
-    }
+        // Update tray menu to reflect the change
+        if let Err(e) = update_tray_menu(&app_handle, &state) {
+            eprintln!("Failed to update tray menu: {}", e);
+        }
+    });
 }
 
 fn update_tray_menu(app: &AppHandle, state: &AppState) -> tauri::Result<()> {
