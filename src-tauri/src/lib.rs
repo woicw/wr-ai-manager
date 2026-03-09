@@ -16,6 +16,10 @@ pub fn run() {
     let symlink_manager = SymlinkManager::new();
 
     tauri::Builder::default()
+        .setup(|app| {
+            tray::create_tray(app.handle())?;
+            Ok(())
+        })
         .manage(AppState {
             config_manager: Mutex::new(config_manager),
         })
