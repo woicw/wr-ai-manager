@@ -17,43 +17,41 @@ fn build_tray_menu(app: &AppHandle, state: &AppState) -> tauri::Result<Menu<taur
         tauri::Error::Anyhow(anyhow::anyhow!("Failed to load global config: {}", e))
     })?;
 
-    // Build config groups submenu
-    let mut config_items: Vec<Box<dyn tauri::menu::IsMenuItem<tauri::Wry>>> = Vec::new();
-
-    for group_id in &global_config.groups {
-        let group = manager.load_config_group(group_id).ok();
-        let label = if let Some(g) = group {
-            format!("{} ({})", g.name, group_id)
-        } else {
-            group_id.clone()
-        };
-
-        let is_active = global_config.active_group == *group_id;
-        let item_id = format!("config_group_{}", group_id);
-        let item = MenuItem::with_id(app, item_id, label, true, None::<&str>)?;
-
-        if is_active {
-            item.set_text(format!("✓ {}", item.text().unwrap_or_default()))?;
-        }
-
-        config_items.push(Box::new(item));
-    }
-
-    drop(manager);
-
-    let config_submenu = if !config_items.is_empty() {
+    // Build config groups submenu using Menu::new and append
+    let config_submenu = if !global_config.groups.is_empty() {
         let submenu = Submenu::with_id(app, "config_groups", "配置组", true)?;
-        for item in config_items {
-            submenu.append(item.as_ref())?;
+
+        for group_id in &global_config.groups {
+            let group = manager.load_config_group(group_id).ok();
+            let label = if let Some(g) = group {
+                format!("{} ({})", g.name, group_id)
+            } else {
+                group_id.clone()
+            };
+
+            let is_active = global_config.active_group == *group_id;
+            let item_id = format!("config_group_{}", group_id);
+
+            let display_label = if is_active {
+                format!("✓ {}", label)
+            } else {
+                label
+            };
+
+            let item = MenuItem::with_id(app, item_id, display_label, true, None::<&str>)?;
+            submenu.append(&item)?;
         }
+
         Some(submenu)
     } else {
         None
     };
 
+    drop(manager);
+
     let quit_item = MenuItem::with_id(app, "quit", "退出应用", true, None::<&str>)?;
 
-    // Build final menu
+    // Build final menu using Menu::new and append
     let menu = Menu::new(app)?;
     menu.append(&open_item)?;
 
