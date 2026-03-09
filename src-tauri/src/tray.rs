@@ -14,8 +14,17 @@ pub fn create_tray(app: &AppHandle) -> tauri::Result<()> {
         &quit_item,
     ])?;
 
+    let icon = app.default_window_icon()
+        .ok_or_else(|| tauri::Error::InvalidIcon(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "Default window icon not found"
+        )))?
+        .clone();
+
+    // Note: The tray icon is managed by Tauri and will persist for the lifetime of the app.
+    // We don't need to store the TrayIcon handle as it's automatically managed.
     let _tray = TrayIconBuilder::new()
-        .icon(app.default_window_icon().unwrap().clone())
+        .icon(icon)
         .menu(&menu)
         .show_menu_on_left_click(true)
         .on_menu_event(move |app, event| {
@@ -35,10 +44,7 @@ fn handle_menu_event(app: &AppHandle, event: tauri::menu::MenuEvent) {
             app.exit(0);
         }
         "open_window" => {
-            if let Some(window) = app.get_webview_window("main") {
-                let _ = window.show();
-                let _ = window.set_focus();
-            }
+            show_main_window(app);
         }
         _ => {}
     }
@@ -46,9 +52,18 @@ fn handle_menu_event(app: &AppHandle, event: tauri::menu::MenuEvent) {
 
 fn handle_tray_event(tray: &tauri::tray::TrayIcon, event: TrayIconEvent) {
     if let TrayIconEvent::DoubleClick { button: MouseButton::Left, .. } = event {
-        if let Some(window) = tray.app_handle().get_webview_window("main") {
-            let _ = window.show();
-            let _ = window.set_focus();
+        show_main_window(tray.app_handle());
+    }
+}
+
+/// Shows and focuses the main window
+fn show_main_window(app: &AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        if let Err(e) = window.show() {
+            eprintln!("Failed to show main window: {}", e);
+        }
+        if let Err(e) = window.set_focus() {
+            eprintln!("Failed to focus main window: {}", e);
         }
     }
 }
