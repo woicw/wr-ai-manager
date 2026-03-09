@@ -79,7 +79,7 @@ pub fn create_tray(app: &AppHandle, state: tauri::State<AppState>) -> tauri::Res
 
     // Note: The tray icon is managed by Tauri and will persist for the lifetime of the app.
     // We don't need to store the TrayIcon handle as it's automatically managed.
-    let _tray = TrayIconBuilder::new()
+    let _tray = TrayIconBuilder::with_id("main")
         .icon(icon)
         .menu(&menu)
         .show_menu_on_left_click(true)
@@ -95,15 +95,67 @@ pub fn create_tray(app: &AppHandle, state: tauri::State<AppState>) -> tauri::Res
 }
 
 fn handle_menu_event(app: &AppHandle, event: tauri::menu::MenuEvent) {
-    match event.id.as_ref() {
+    let event_id = event.id.as_ref();
+
+    match event_id {
         "quit" => {
             app.exit(0);
         }
         "open_window" => {
             show_main_window(app);
         }
+        id if id.starts_with("config_group_") => {
+            let group_id = id.strip_prefix("config_group_").unwrap();
+            handle_config_group_switch(app, group_id);
+        }
         _ => {}
     }
+}
+
+fn handle_config_group_switch(app: &AppHandle, group_id: &str) {
+    let state = app.state::<AppState>();
+
+    // Update active group in global config
+    let manager = match state.config_manager.lock() {
+        Ok(m) => m,
+        Err(e) => {
+            eprintln!("Failed to lock config manager: {}", e);
+            return;
+        }
+    };
+
+    let mut global_config = match manager.load_global_config() {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("Failed to load global config: {}", e);
+            return;
+        }
+    };
+
+    global_config.active_group = group_id.to_string();
+
+    if let Err(e) = manager.save_global_config(&global_config) {
+        eprintln!("Failed to save global config: {}", e);
+        return;
+    }
+
+    drop(manager);
+
+    // Update tray menu to reflect the change
+    if let Err(e) = update_tray_menu(app, &state) {
+        eprintln!("Failed to update tray menu: {}", e);
+    }
+}
+
+fn update_tray_menu(app: &AppHandle, state: &AppState) -> tauri::Result<()> {
+    let menu = build_tray_menu(app, state)?;
+
+    // Get the tray icon and update its menu
+    if let Some(tray) = app.tray_by_id("main") {
+        tray.set_menu(Some(menu))?;
+    }
+
+    Ok(())
 }
 
 fn handle_tray_event(tray: &tauri::tray::TrayIcon, event: TrayIconEvent) {
