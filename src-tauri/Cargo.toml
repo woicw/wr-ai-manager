@@ -1,6 +1,6 @@
 [package]
 name = "wr-ai-manager"
-version = "0.1.0"
+version = "0.1.1"
 description = "WR AI Manager desktop application"
 authors = ["woic"]
 edition = "2021"

@@ -344,7 +344,7 @@ export function SettingsPage() {
               {t("settings.about.version")}
             </div>
             <div className="mt-3 text-lg font-semibold tracking-[-0.02em] text-foreground">
-              0.1.0
+              0.1.1
             </div>
           </div>
           <div className={aboutCardClassName}>

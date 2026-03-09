@@ -99,7 +99,7 @@ pub struct InstallMarketplaceSkillResult {
 
 fn github_client() -> reqwest::Client {
     reqwest::Client::builder()
-        .user_agent("wr-ai-manager/0.1.0")
+        .user_agent("wr-ai-manager/0.1.1")
         .build()
         .expect("failed to build reqwest client")
 }
@@ -213,7 +213,7 @@ async fn download_github_tarball(
 ) -> Result<Vec<u8>, String> {
     let response = client
         .get(github_tarball_url(repo, branch))
-        .header(USER_AGENT, "wr-ai-manager/0.1.0")
+        .header(USER_AGENT, "wr-ai-manager/0.1.1")
         .send()
         .await
         .map_err(|error| format!("Failed to download repository archive: {error}"))?;
@@ -361,7 +361,7 @@ async fn fetch_official_skills_internal() -> Result<Vec<OfficialMarketplaceSkill
     let client = github_client();
     let response = client
         .get(GITHUB_SKILLS_TARBALL_URL)
-        .header(USER_AGENT, "wr-ai-manager/0.1.0")
+        .header(USER_AGENT, "wr-ai-manager/0.1.1")
         .send()
         .await
         .map_err(|error| format!("Failed to download official skills archive: {error}"))?;
