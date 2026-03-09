@@ -20,6 +20,12 @@ pub fn run() {
             tray::create_tray(app.handle())?;
             Ok(())
         })
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                window.hide().unwrap();
+                api.prevent_close();
+            }
+        })
         .manage(AppState {
             config_manager: Mutex::new(config_manager),
         })
