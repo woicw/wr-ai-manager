@@ -2,6 +2,7 @@ mod models;
 mod config_manager;
 mod symlink_manager;
 mod commands;
+mod tray;
 
 use commands::config::AppState;
 use commands::symlink::SymlinkState;
