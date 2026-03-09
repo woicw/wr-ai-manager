@@ -7,6 +7,7 @@ use crate::commands::config::AppState;
 
 fn build_tray_menu(app: &AppHandle, state: &AppState) -> tauri::Result<Menu<tauri::Wry>> {
     let open_item = MenuItem::with_id(app, "open_window", "打开主窗口", true, None::<&str>)?;
+    let refresh_item = MenuItem::with_id(app, "refresh_config", "刷新配置", true, None::<&str>)?;
 
     // Load config groups
     let manager = state.config_manager.lock().map_err(|e| {
@@ -60,6 +61,7 @@ fn build_tray_menu(app: &AppHandle, state: &AppState) -> tauri::Result<Menu<taur
     }
 
     menu.append(&PredefinedMenuItem::separator(app)?)?;
+    menu.append(&refresh_item)?;
     menu.append(&quit_item)?;
 
     Ok(menu)
@@ -101,6 +103,12 @@ fn handle_menu_event(app: &AppHandle, event: tauri::menu::MenuEvent) {
         }
         "open_window" => {
             show_main_window(app);
+        }
+        "refresh_config" => {
+            let state = app.state::<AppState>();
+            if let Err(e) = update_tray_menu(app, &state) {
+                eprintln!("Failed to refresh tray menu: {}", e);
+            }
         }
         id if id.starts_with("config_group_") => {
             let group_id = id.strip_prefix("config_group_").unwrap();
@@ -200,6 +208,12 @@ fn update_tray_menu(app: &AppHandle, state: &AppState) -> tauri::Result<()> {
     }
 
     Ok(())
+}
+
+/// Public function to refresh tray menu from other modules
+pub fn refresh_tray_menu(app: &AppHandle) -> tauri::Result<()> {
+    let state = app.state::<AppState>();
+    update_tray_menu(app, &state)
 }
 
 fn handle_tray_event(tray: &tauri::tray::TrayIcon, event: TrayIconEvent) {

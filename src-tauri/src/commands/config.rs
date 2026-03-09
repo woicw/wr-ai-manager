@@ -46,6 +46,7 @@ pub async fn create_config_group(
     name: String,
     description: String,
     state: State<'_, AppState>,
+    app: tauri::AppHandle,
 ) -> Result<ConfigGroup, String> {
     let manager = state.config_manager.lock().map_err(|e| e.to_string())?;
 
@@ -67,6 +68,13 @@ pub async fn create_config_group(
         manager.save_global_config(&config).map_err(|e| e.to_string())?;
     }
 
+    drop(manager);
+
+    // Refresh tray menu to show new group
+    if let Err(e) = crate::tray::refresh_tray_menu(&app) {
+        eprintln!("Failed to refresh tray menu: {}", e);
+    }
+
     Ok(group)
 }
 
@@ -74,6 +82,7 @@ pub async fn create_config_group(
 pub async fn delete_config_group(
     group_id: String,
     state: State<'_, AppState>,
+    app: tauri::AppHandle,
 ) -> Result<(), String> {
     if group_id == "default" {
         return Err("Cannot delete default group".to_string());
@@ -92,12 +101,19 @@ pub async fn delete_config_group(
 
     manager.save_global_config(&config).map_err(|e| e.to_string())?;
 
+    drop(manager);
+
     // Delete group directory
     let home = dirs::home_dir().ok_or("Failed to get home directory")?;
     let group_dir = home.join(".wr-ai-manager/groups").join(&group_id);
 
     if group_dir.exists() {
         std::fs::remove_dir_all(&group_dir).map_err(|e| e.to_string())?;
+    }
+
+    // Refresh tray menu to remove deleted group
+    if let Err(e) = crate::tray::refresh_tray_menu(&app) {
+        eprintln!("Failed to refresh tray menu: {}", e);
     }
 
     Ok(())
