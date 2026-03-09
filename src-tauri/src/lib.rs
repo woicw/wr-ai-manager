@@ -9,15 +9,21 @@ use commands::symlink::SymlinkState;
 use config_manager::ConfigManager;
 use symlink_manager::SymlinkManager;
 use std::sync::Mutex;
+use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let config_manager = ConfigManager::new().expect("Failed to initialize config manager");
     let symlink_manager = SymlinkManager::new();
 
+    let app_state = AppState {
+        config_manager: Mutex::new(config_manager),
+    };
+
     tauri::Builder::default()
-        .setup(|app| {
-            tray::create_tray(app.handle())?;
+        .setup(move |app| {
+            let state = app.state::<AppState>();
+            tray::create_tray(app.handle(), state)?;
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -26,9 +32,7 @@ pub fn run() {
                 api.prevent_close();
             }
         })
-        .manage(AppState {
-            config_manager: Mutex::new(config_manager),
-        })
+        .manage(app_state)
         .manage(SymlinkState {
             manager: Mutex::new(symlink_manager),
         })
