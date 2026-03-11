@@ -182,9 +182,9 @@ export function MarketplacePage() {
               {skills.map((skill) => (
                 <div
                   key={skill.id}
-                  className={`rounded-[28px] px-6 py-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_24px_54px_rgba(15,23,42,0.12)] ${isDarkTheme ? "border border-white/10 bg-[linear-gradient(135deg,rgba(28,24,23,0.94),rgba(32,29,25,0.9)_44%,rgba(18,34,44,0.88))] hover:border-primary/40" : "border border-white/50 bg-[linear-gradient(135deg,rgba(255,255,255,0.95),rgba(255,247,238,0.88)_45%,rgba(237,248,255,0.82))] hover:border-primary/30"}`}
+                  className={`flex h-full flex-col rounded-[28px] px-6 py-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_24px_54px_rgba(15,23,42,0.12)] ${isDarkTheme ? "border border-white/10 bg-[linear-gradient(135deg,rgba(28,24,23,0.94),rgba(32,29,25,0.9)_44%,rgba(18,34,44,0.88))] hover:border-primary/40" : "border border-white/50 bg-[linear-gradient(135deg,rgba(255,255,255,0.95),rgba(255,247,238,0.88)_45%,rgba(237,248,255,0.82))] hover:border-primary/30"}`}
                 >
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex min-h-[220px] items-start justify-between gap-4">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="text-[16px] font-semibold tracking-[-0.02em] text-foreground">
@@ -194,13 +194,15 @@ export function MarketplacePage() {
                           {skill.badge === "official" ? t("marketplace.official") : skill.badge}
                         </span>
                       </div>
-                      <p className="mt-2 line-clamp-3 text-[14px] leading-7 text-muted-foreground">
+                      <p className="mt-2 line-clamp-4 text-[14px] leading-7 text-muted-foreground">
                         {skill.description}
                       </p>
                     </div>
                   </div>
 
-                  <div className="mt-5 h-px bg-border" />
+                  <div className="mt-auto pt-5">
+                    <div className="h-px bg-border" />
+                  </div>
 
                   <div className="mt-5 flex flex-col gap-3">
                     <div className="min-w-0 text-[12px] uppercase tracking-[0.12em] text-muted-foreground">

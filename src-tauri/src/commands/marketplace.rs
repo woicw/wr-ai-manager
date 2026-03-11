@@ -607,6 +607,7 @@ pub async fn fetch_marketplace_skills(query: Option<String>, limit: Option<u32>)
 pub async fn install_marketplace_skill(
     request: InstallMarketplaceSkillRequest,
     state: tauri::State<'_, AppState>,
+    app: tauri::AppHandle,
 ) -> Result<InstallMarketplaceSkillResult, String> {
     let home = dirs::home_dir().ok_or("Failed to get home directory")?;
     let base_path = home.join(".wr-ai-manager");
@@ -702,6 +703,7 @@ pub async fn install_marketplace_skill(
             tool_id.clone(),
             true,
             state.clone(),
+            app.clone(),
         )
         .await?;
 

@@ -76,6 +76,7 @@ pub async fn apply_config_group(
     tool_id: String,
     force: bool,
     state: State<'_, AppState>,
+    app: tauri::AppHandle,
 ) -> Result<ApplyResult, String> {
     log_apply(&format!(
         "start group_id={} tool_id={} force={}",
@@ -339,6 +340,12 @@ pub async fn apply_config_group(
     );
 
     manager.save_global_config(&global_config).map_err(|e| e.to_string())?;
+    drop(manager);
+
+    if let Err(e) = crate::tray::refresh_tray_menu(&app) {
+        eprintln!("Failed to refresh tray menu: {}", e);
+    }
+
     log_apply(&format!(
         "completed apply for group {} tool {}",
         group_id, tool_id

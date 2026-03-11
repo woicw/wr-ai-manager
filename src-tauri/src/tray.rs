@@ -159,6 +159,7 @@ fn handle_config_group_switch(app: &AppHandle, group_id: &str) {
                 tool_id.clone(),
                 false,
                 state.clone(),
+                app_handle.clone(),
             )
             .await
             {
